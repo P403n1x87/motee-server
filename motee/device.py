@@ -2,14 +2,16 @@ import os
 
 import subprocess
 
-from pynput.mouse import Button, Controller
+from pynput.mouse import Button, Controller as MouseController
+from pynput.keyboard import Controller as KeyboardController
 
 from Xlib import X
 from Xlib.display import Display
 from Xlib.ext.xtest import fake_input
 import Xlib.XK
 
-MOUSE = Controller()
+KEYBOARD = KeyboardController()
+MOUSE = MouseController()
 
 DISPLAY = Display()
 Xlib.XK.load_keysym_group("xf86")
@@ -53,10 +55,31 @@ class Device:
     def _key_release(self, key):
         self._key_event(X.KeyRelease, key)
 
+    def _keystroke(self, key):
+        self._key_press(key)
+        self._key_release(key)
+
+    def keystroke(self, key):
+        KEYBOARD.press(key)
+        KEYBOARD.release(key)
+
+    def lclick(self):
+        MOUSE.press(Button.left)
+        MOUSE.release(Button.left)
+
+    def rclick(self):
+        MOUSE.press(Button.right)
+        MOUSE.release(Button.right)
+
+    def mute(self):
+        self._keystroke(MUTE)
+
     def volume_up(self):
-        self._key_press(VOLUME_UP)
-        self._key_release(VOLUME_UP)
+        self._keystroke(VOLUME_UP)
 
     def volume_down(self):
-        self._key_press(VOLUME_DOWN)
-        self._key_release(VOLUME_DOWN)
+        self._keystroke(VOLUME_DOWN)
+
+
+if __name__ == "__main__":
+    Device().mute()

@@ -43,8 +43,14 @@ class Handlers:
     def handle_device(request, writer):
         if request.action == "volume":
             getattr(Device(), f"volume_{request.data['direction']}")()
+        elif request.action == "mute":
+            Device().mute()
         elif request.action == "cursor":
             Device().move_cursor(request.data["dx"], request.data["dy"])
+        elif request.action == "click":
+            getattr(Device(), f"{request.data['button']}click")()
+        elif request.action == "keystroke":
+            Device().keystroke(chr(request.data["unicode"]))
         elif request.action == "poweroff":
             Device().shutdown()
         elif request.action == "reboot":
@@ -71,12 +77,7 @@ class Handlers:
             try:
                 player = get_player(request.data["name"])
                 player.play_pause()
-                return Response(
-                    scope="player",
-                    content="info",
-                    correlation=request.id,
-                    data={"result": "OK"},
-                )
+                return Response.ok(request)
             except Exception as e:
                 return Response(
                     scope="player",
