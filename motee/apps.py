@@ -1,10 +1,18 @@
 from ewmh import EWMH
 from io import BytesIO
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 from Xlib import Xatom
 
 
 _EWMH = EWMH()
+
+
+def generate_icon(name):
+    image = Image.new("RGBA", (64, 64), color=(70, 168, 231))
+    d = ImageDraw.Draw(image)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf", 24)
+    d.text((10, 16), name[:4].upper(), font=font, fill=(192, 192, 255))
+    return image
 
 
 class App:
@@ -51,9 +59,13 @@ class App:
                 array = bytes(
                     b for _ in data for b in argb_to_rgba(_.to_bytes(4, "little"))
                 )
-                buffer = BytesIO()
-                Image.frombytes("RGBA", (w, h), array).save(buffer, format="PNG")
-                self._icon = buffer.getvalue()
+                image = Image.frombytes("RGBA", (w, h), array)
+            else:
+                image = generate_icon(self.name)
+
+            buffer = BytesIO()
+            image.save(buffer, format="PNG")
+            self._icon = buffer.getvalue()
 
         return self._icon
 

@@ -57,6 +57,10 @@ class Handlers:
             Device().reboot()
         elif request.action == "launch":
             Device().launch(request.data["command"])
+        elif request.action == "scroll":
+            getattr(Device(), f"scroll_{request.data['direction']}")()
+        elif request.action == "zoom":
+            getattr(Device(), f"zoom_{request.data['direction']}")()
         return Response.ok(request)
 
     @staticmethod

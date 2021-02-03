@@ -3,7 +3,7 @@ import os
 import subprocess
 
 from pynput.mouse import Button, Controller as MouseController
-from pynput.keyboard import Controller as KeyboardController
+from pynput.keyboard import Key, Controller as KeyboardController
 
 from Xlib import X
 from Xlib.display import Display
@@ -74,6 +74,22 @@ class Device:
     def mute(self):
         self._keystroke(MUTE)
 
+    def scroll_down(self):
+        MOUSE.scroll(0, -4)
+
+    def scroll_up(self):
+        MOUSE.scroll(0, 4)
+
+    def zoom_in(self):
+        KEYBOARD.press(Key.ctrl)
+        self.scroll_up()
+        KEYBOARD.release(Key.ctrl)
+
+    def zoom_out(self):
+        KEYBOARD.press(Key.ctrl)
+        self.scroll_down()
+        KEYBOARD.release(Key.ctrl)
+
     def volume_up(self):
         self._keystroke(VOLUME_UP)
 
@@ -81,5 +97,12 @@ class Device:
         self._keystroke(VOLUME_DOWN)
 
 
+class DeviceHandler:
+    pass
+
+
 if __name__ == "__main__":
-    Device().mute()
+    from time import sleep
+
+    sleep(3)
+    Device().zoom_in()
