@@ -148,7 +148,7 @@ def serve(host="localhost", port=8787):
         server.close()
 
 
-if __name__ == "__main__":
+def main():
     for nic in nics():
         if nic.connected:
             ip = nic.ip
@@ -157,3 +157,7 @@ if __name__ == "__main__":
             ip = "localhost"
     LOGGER.info(f"Serving on {ip}:8787")
     serve(host=ip)
+
+
+if __name__ == "__main__":
+    main()
