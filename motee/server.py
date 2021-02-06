@@ -89,6 +89,30 @@ class Handlers:
                     correlation=request.id,
                     data={"details": str(e)},
                 )
+        elif action == "previous":
+            try:
+                player = get_player(request.data["name"])
+                player.previous()
+                return Response.ok(request)
+            except Exception as e:
+                return Response(
+                    scope="player",
+                    content="error",
+                    correlation=request.id,
+                    data={"details": str(e)},
+                )
+        elif action == "next":
+            try:
+                player = get_player(request.data["name"])
+                player.next()
+                return Response.ok(request)
+            except Exception as e:
+                return Response(
+                    scope="player",
+                    content="error",
+                    correlation=request.id,
+                    data={"details": str(e)},
+                )
 
     @staticmethod
     def handle_discover(request, writer):
