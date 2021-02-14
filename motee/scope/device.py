@@ -64,10 +64,12 @@ class Device:
         KEYBOARD.release(key)
 
     def lclick(self):
+        MOUSE.release(Button.left)
         MOUSE.press(Button.left)
         MOUSE.release(Button.left)
 
     def rclick(self):
+        MOUSE.release(Button.right)
         MOUSE.press(Button.right)
         MOUSE.release(Button.right)
 
@@ -82,12 +84,12 @@ class Device:
 
     def zoom_in(self):
         KEYBOARD.press(Key.ctrl)
-        self.scroll_up()
+        MOUSE.scroll(0, 1)
         KEYBOARD.release(Key.ctrl)
 
     def zoom_out(self):
         KEYBOARD.press(Key.ctrl)
-        self.scroll_down()
+        MOUSE.scroll(0, -1)
         KEYBOARD.release(Key.ctrl)
 
     def volume_up(self):
@@ -117,6 +119,12 @@ class DeviceHandler(ScopeHandler):
 
     def click(button):
         getattr(Device(), f"{button}click")()
+        return True
+
+    def dclick(button):
+        click = getattr(Device(), f"{button}click")
+        click()
+        click()
         return True
 
     def keystroke(unicode):
