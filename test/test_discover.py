@@ -4,5 +4,5 @@ from test import start_server_and_send_request as sssr, get_connected_nic as nic
 
 
 def test_player():
-    response = sssr(Request(scope="discover"))
+    response = sssr(Request(scope="device", action="discover"))
     assert response.data["inet"] == nic().ip

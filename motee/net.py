@@ -3,6 +3,9 @@ import socket
 from typing import Iterator
 
 
+PORT = 8787
+
+
 class NIC:
     def __init__(self, name, addrs):
         self.name = name
@@ -31,3 +34,14 @@ def hostname():
 
 def nics() -> Iterator[NIC]:
     return (NIC(n, addrs) for n, addrs in psutil.net_if_addrs().items() if n != "lo")
+
+
+def get_address():
+    for nic in nics():
+        if nic.connected:
+            return nic.ip
+    return "localhost"
+
+
+def get_mac(inet=get_address()):
+    return {n.ip: n.mac for n in nics() if n.connected}.get(inet, None)

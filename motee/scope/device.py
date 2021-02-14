@@ -1,10 +1,10 @@
 import os
-
 import subprocess
 
+from motee.net import get_address, get_mac, hostname, PORT
+from motee.scope import ScopeHandler
 from pynput.mouse import Button, Controller as MouseController
 from pynput.keyboard import Key, Controller as KeyboardController
-
 from Xlib import X
 from Xlib.display import Display
 from Xlib.ext.xtest import fake_input
@@ -97,12 +97,48 @@ class Device:
         self._keystroke(VOLUME_DOWN)
 
 
-class DeviceHandler:
-    pass
+class DeviceHandler(ScopeHandler):
+    def discover():
+        inet = get_address()
+        mac = get_mac(inet)
+        return {"host": hostname(), "inet": inet, "port": PORT, "mac": mac}
 
+    def volume(direction):
+        getattr(Device(), f"volume_{direction}")()
+        return True
 
-if __name__ == "__main__":
-    from time import sleep
+    def mute():
+        Device().mute()
+        return True
 
-    sleep(3)
-    Device().zoom_in()
+    def cursor(dx, dy):
+        Device().move_cursor(dx, dy)
+        return True
+
+    def click(button):
+        getattr(Device(), f"{button}click")()
+        return True
+
+    def keystroke(unicode):
+        Device().keystroke(chr(unicode))
+        return True
+
+    def poweroff():
+        Device().shutdown()
+        return True
+
+    def reboot():
+        Device().reboot()
+        return True
+
+    def launch(command):
+        Device().launch(command)
+        return True
+
+    def scroll(direction):
+        getattr(Device(), f"scroll_{direction}")()
+        return True
+
+    def zoom(direction):
+        getattr(Device(), f"zoom_{direction}")()
+        return True

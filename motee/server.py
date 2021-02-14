@@ -1,138 +1,21 @@
 import asyncio
-from base64 import b64encode
 from logging import basicConfig, getLogger, DEBUG
 
-from motee.apps import active_app, app, apps
-from motee.device import Device
-from motee.media import players, get_player
 from motee.message import Response, Request
-from motee.net import hostname, nics
+from motee.net import get_address
+from motee.scope.app import AppHandler
+from motee.scope.device import DeviceHandler
+from motee.scope.player import PlayerHandler
 
 
 LOGGER = getLogger(__name__)
 basicConfig(level=DEBUG)
 
-
-class Handlers:
-    @staticmethod
-    def handle_app(request, writer):
-        if request.action == "list":
-            return Response(
-                scope="app",
-                content="list",
-                correlation=request.id,
-                data={
-                    _.name: {"wid": _.wid, "icon": b64encode(_.icon or b"").decode()}
-                    for _ in apps()
-                    # if _.icon is not None
-                },
-            )
-        elif request.action == "activate":
-            wid = request.data["wid"]
-            aapp = active_app()
-            if aapp.wid == wid:
-                aapp.toggle_fullscreen()
-            else:
-                app(request.data["wid"]).activate()
-            return Response.ok(request)
-        elif request.action == "close":
-            active_app().close()
-            return Response.ok(request)
-
-    @staticmethod
-    def handle_device(request, writer):
-        if request.action == "volume":
-            getattr(Device(), f"volume_{request.data['direction']}")()
-        elif request.action == "mute":
-            Device().mute()
-        elif request.action == "cursor":
-            Device().move_cursor(request.data["dx"], request.data["dy"])
-        elif request.action == "click":
-            getattr(Device(), f"{request.data['button']}click")()
-        elif request.action == "keystroke":
-            Device().keystroke(chr(request.data["unicode"]))
-        elif request.action == "poweroff":
-            Device().shutdown()
-        elif request.action == "reboot":
-            Device().reboot()
-        elif request.action == "launch":
-            Device().launch(request.data["command"])
-        elif request.action == "scroll":
-            getattr(Device(), f"scroll_{request.data['direction']}")()
-        elif request.action == "zoom":
-            getattr(Device(), f"zoom_{request.data['direction']}")()
-        return Response.ok(request)
-
-    @staticmethod
-    def handle_player(request, writer):
-        action = request.action
-        if action == "list":
-            return Response(
-                scope="player",
-                content="list",
-                correlation=request.id,
-                data={
-                    _.name: {"status": _.status, "metadata": _.metadata}
-                    for _ in players()
-                },
-            )
-
-        elif action == "play_pause":
-            try:
-                player = get_player(request.data["name"])
-                player.play_pause()
-                return Response.ok(request)
-            except Exception as e:
-                return Response(
-                    scope="player",
-                    content="error",
-                    correlation=request.id,
-                    data={"details": str(e)},
-                )
-        elif action == "previous":
-            try:
-                player = get_player(request.data["name"])
-                player.previous()
-                return Response.ok(request)
-            except Exception as e:
-                return Response(
-                    scope="player",
-                    content="error",
-                    correlation=request.id,
-                    data={"details": str(e)},
-                )
-        elif action == "next":
-            try:
-                player = get_player(request.data["name"])
-                player.next()
-                return Response.ok(request)
-            except Exception as e:
-                return Response(
-                    scope="player",
-                    content="error",
-                    correlation=request.id,
-                    data={"details": str(e)},
-                )
-
-    @staticmethod
-    def handle_discover(request, writer):
-        inet, port = writer.get_extra_info("sockname")
-        mac = {n.ip: n.mac for n in nics() if n.connected}.get(inet, None)
-        return (
-            Response(
-                correlation=request.id,
-                scope="discover",
-                content="info",
-                data={"host": hostname(), "inet": inet, "port": port, "mac": mac},
-            )
-            if mac
-            else Response(
-                correlation=request.id,
-                scope="discover",
-                content="error",
-                data="no MAC address for host",
-            )
-        )
+HANDLERS = {
+    "app": AppHandler,
+    "device": DeviceHandler,
+    "player": PlayerHandler,
+}
 
 
 async def client_handler(reader, writer):
@@ -146,11 +29,21 @@ async def client_handler(reader, writer):
                 break
             request = Request.parse(data)
             LOGGER.debug(f"Received {request} from client {client_name}")
-            handler = getattr(Handlers, f"handle_{request.scope}", None)
+            handler = HANDLERS.get(request.scope, None)
             if handler is None:
                 raise RuntimeError(f"Unknown scope: {request.scope}")
-            response = handler(request, writer)
-            if isinstance(response, Response):
+            response_data = handler.handle(request.action, request.data)
+            if response_data is not None:
+                response = (
+                    response_data is True
+                    and Response.ok(request)
+                    or Response(
+                        scope=request.scope,
+                        correlation=request.id,
+                        content=request.action,
+                        data=response_data,
+                    )
+                )
                 LOGGER.debug(f"Sending {response} to client {client_name}")
                 writer.write(response.encode())
             await writer.drain()
@@ -173,12 +66,7 @@ def serve(host="localhost", port=8787):
 
 
 def main():
-    for nic in nics():
-        if nic.connected:
-            ip = nic.ip
-            break
-        else:
-            ip = "localhost"
+    ip = get_address()
     LOGGER.info(f"Serving on {ip}:8787")
     serve(host=ip)
 

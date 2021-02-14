@@ -1,5 +1,8 @@
 import dbus
 
+from motee.scope import ScopeHandler
+
+
 DBUS_MPRIS = "org.mpris.MediaPlayer2"
 BUS = dbus.SessionBus()
 
@@ -82,3 +85,20 @@ def get_player(name):
 
 def players():
     return (Player(_) for _ in BUS.list_names() if _.startswith(DBUS_MPRIS))
+
+
+class PlayerHandler(ScopeHandler):
+    def list():
+        return {_.name: {"status": _.status, "metadata": _.metadata} for _ in players()}
+
+    def play_pause(name):
+        get_player(name).play_pause()
+        return True
+
+    def previous(name):
+        get_player(name).previous()
+        return True
+
+    def next(name):
+        get_player(name).next()
+        return True

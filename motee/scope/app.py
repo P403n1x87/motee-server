@@ -1,5 +1,8 @@
-from ewmh import EWMH
+from base64 import b64encode
 from io import BytesIO
+
+from ewmh import EWMH
+from motee.scope import ScopeHandler
 from PIL import Image, ImageDraw, ImageFont
 from Xlib import Xatom
 
@@ -108,6 +111,25 @@ def apps():
                 yield app
 
 
-if __name__ == "__main__":
-    for app in apps():
-        print(app.name, app.pid)
+class AppHandler(ScopeHandler):
+    __scope__ = "app"
+
+    @staticmethod
+    def list():
+        return {
+            _.name: {"wid": _.wid, "icon": b64encode(_.icon or b"").decode()}
+            for _ in apps()
+            # if _.icon is not None
+        }
+
+    def activate(wid):
+        aapp = active_app()
+        if aapp.wid == wid:
+            aapp.toggle_fullscreen()
+        else:
+            app(wid).activate()
+        return True
+
+    def close():
+        active_app().close()
+        return True
