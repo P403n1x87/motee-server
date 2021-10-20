@@ -6,7 +6,6 @@ from motee.scope import ScopeHandler
 from PIL import Image, ImageDraw, ImageFont
 from Xlib import Xatom
 
-
 _EWMH = EWMH()
 
 
@@ -21,10 +20,15 @@ def generate_icon(name):
 class App:
 
     ICON_SIZE = 64
+    _icon_cache = {}
 
     def __init__(self, win):
         self.win = win
         self._icon = False
+
+    @property
+    def _key(self):
+        return (self.name, self.pid)
 
     @property
     def name(self):
@@ -48,8 +52,10 @@ class App:
 
     @property
     def icon(self):
-        if self._icon is False:
-            self._icon = None
+        key = self._key
+        try:
+            return self._icon_cache[key]
+        except KeyError:
             icon_data = self.win.get_full_property(
                 _EWMH.display.get_atom("_NET_WM_ICON"), Xatom.CARDINAL
             )
@@ -68,9 +74,8 @@ class App:
 
             buffer = BytesIO()
             image.save(buffer, format="PNG")
-            self._icon = buffer.getvalue()
-
-        return self._icon
+            icon = self._icon_cache[key] = buffer.getvalue()
+            return icon
 
     def activate(self):
         self._setter(_EWMH.setActiveWindow, self.win)
