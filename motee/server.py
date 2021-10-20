@@ -1,15 +1,17 @@
 import asyncio
-from logging import basicConfig, getLogger, DEBUG
+import logging
+import os
 
-from motee.message import Response, Request
+from motee.message import Request, Response
 from motee.net import get_address
 from motee.scope.app import AppHandler
 from motee.scope.device import DeviceHandler
 from motee.scope.player import PlayerHandler
 
+DEBUG_LEVEL = getattr(logging, os.getenv("MOTEE_LOG_LEVEL", "INFO").upper())
 
-LOGGER = getLogger(__name__)
-basicConfig(level=DEBUG)
+LOGGER = logging.getLogger(__name__)
+logging.basicConfig(level=DEBUG_LEVEL)
 
 HANDLERS = {
     "app": AppHandler,
